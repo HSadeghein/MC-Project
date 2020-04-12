@@ -26,6 +26,8 @@ import androidx.fragment.app.FragmentTransaction;
 
 import com.example.findmyhomie.PopActivity;
 import com.example.findmyhomie.R;
+import com.example.findmyhomie.User;
+import com.example.findmyhomie.UserRepository;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
@@ -41,6 +43,9 @@ import com.google.android.gms.maps.model.MarkerOptions;
 
 import java.util.List;
 
+//Spotify
+
+
 public class HomeFragment extends Fragment implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener {
 
     private GoogleMap mMap;
@@ -50,6 +55,10 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
     LocationRequest mLocationRequest;
     Location mLastLocation;
     Marker mCurrLocationMarker;
+
+
+
+
 
     public HomeFragment() {
 
@@ -221,7 +230,15 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
     }
 
     private void addSapleMarker() {
-        mMap.addMarker(new MarkerOptions().position(new LatLng(65.048599f, 25.471414f)).title("Friend1"));
+        UserRepository userRepository = new UserRepository(getContext());
+        userRepository.insertUser("Mohammad Hassan Sadeghein","HSadeghein",65.048599f,25.471414f,"MySpotifyUsername");
+        User myUser = userRepository.getUser("HSadeghein");
+        System.out.println(myUser.getFullName());
+        System.out.println(myUser.getLat());
+
+//        mMap.addMarker(new MarkerOptions().position(new LatLng(65.048599f, 25.471414f)).title("Friend1"));
+//        mMap.addMarker(new MarkerOptions().position(new LatLng(myUser.getLat(), myUser.getLng())).title(myUser.spotifyUsername));
+//
         mMap.addMarker(new MarkerOptions().position(new LatLng(65.078599f, 25.071414f)).title("Friend2"));
         mMap.addMarker(new MarkerOptions().position(new LatLng(63.048599f, 25.471414f)).title("Friend3"));
         mMap.addMarker(new MarkerOptions().position(new LatLng(65.148599f, 24.471414f)).title("Friend4"));
