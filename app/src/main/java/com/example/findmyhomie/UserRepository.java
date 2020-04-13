@@ -1,9 +1,12 @@
 package com.example.findmyhomie;
 
 import android.content.Context;
+import android.database.sqlite.SQLiteConstraintException;
 import android.os.AsyncTask;
 
 import androidx.room.Room;
+
+import java.util.List;
 
 public class UserRepository {
 
@@ -40,7 +43,7 @@ public class UserRepository {
         insertUser(user);
     }
 
-    public void insertUser(final User user) {
+    public void insertUser(final User user) throws SQLiteConstraintException {
         new AsyncTask<Void, Void, Void>() {
             @Override
             protected Void doInBackground(Void... voids) {
@@ -50,17 +53,16 @@ public class UserRepository {
         }.execute();
     }
 
-//    public void updateTask(final Note note) {
-//        note.setModifiedAt(AppUtils.getCurrentDateTime());
-//
-//        new AsyncTask<Void, Void, Void>() {
-//            @Override
-//            protected Void doInBackground(Void... voids) {
-//                noteDatabase.daoAccess().updateTask(note);
-//                return null;
-//            }
-//        }.execute();
-//    }
+    public void updateTask(final User user) {
+
+        new AsyncTask<Void, Void, Void>() {
+            @Override
+            protected Void doInBackground(Void... voids) {
+                userDatabase.userDao().updateUser(user);
+                return null;
+            }
+        }.execute();
+    }
 //
 //    public void deleteTask(final int id) {
 //        final LiveData<Note> task = getTask(id);
@@ -96,6 +98,10 @@ public class UserRepository {
 
     public User getUser(String _username) {
         return userDatabase.userDao().getUserByUsername(_username);
+    }
+    public List<User> getAllUsers()
+    {
+        return userDatabase.userDao().getAll();
     }
 //
 //    public LiveData<List<Note>> getTasks() {

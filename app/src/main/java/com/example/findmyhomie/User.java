@@ -2,9 +2,11 @@ package com.example.findmyhomie;
 
 import androidx.room.ColumnInfo;
 import androidx.room.Entity;
+import androidx.room.Index;
 import androidx.room.PrimaryKey;
 
-@Entity(tableName = "users")
+@Entity(tableName = "users", indices = {@Index(value = {"username"},
+        unique = true)})
 public class User {
     @PrimaryKey(autoGenerate = true)
     public int uid;
@@ -19,41 +21,43 @@ public class User {
     @ColumnInfo(name = "spotify_current_song_id")
     public String spotifySongID;
 
-    public void setUsername(String _username)
-    {
+    public void setUsername(String _username) {
         this.username = _username;
     }
-    public String getUsername()
-    {
+
+    public String getUsername() {
         return this.username;
     }
-    public void setFullName(String _fullName)
-    {
+
+    public void setFullName(String _fullName) {
         this.fullName = _fullName;
     }
-    public String getFullName(){
+
+    public String getFullName() {
         return fullName;
     }
-    public void setLat(float _Lat)
-    {
+
+    public void setLat(float _Lat) {
         this.Lat = _Lat;
     }
-    public float getLat(){
+
+    public float getLat() {
         return this.Lat;
     }
-    public void setLng(float _Lng)
-    {
+
+    public void setLng(float _Lng) {
         this.Lng = _Lng;
     }
-    public float getLng(){
+
+    public float getLng() {
         return this.Lng;
     }
-    public void setSpotifySongID(String _id)
-    {
+
+    public void setSpotifySongID(String _id) {
         this.spotifySongID = _id;
     }
-    public String getSpotifyUsername()
-    {
+
+    public String getSpotifyUsername() {
         return this.spotifySongID;
     }
 

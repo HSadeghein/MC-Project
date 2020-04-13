@@ -114,7 +114,7 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
             mFusedLocationClient.requestLocationUpdates(mLocationRequest, mLocationCallback, Looper.myLooper());
             mMap.setMyLocationEnabled(true);
         }
-        addSapleMarker();
+//        addSapleMarker();
     }
 
     LocationCallback mLocationCallback = new LocationCallback() {
