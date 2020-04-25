@@ -45,8 +45,6 @@ public class MainActivity extends AppCompatActivity {
                     public void onConnected(SpotifyAppRemote spotifyAppRemote) {
                         mSpotifyAppRemote = spotifyAppRemote;
                         Log.d("MainActivity", "Connected! Yay!");
-
-                        // Now you can start interacting with App Remote
                         myBroadcastReceiver = new MyBroadcastReceiver();
                         getApplicationContext().registerReceiver(myBroadcastReceiver, new IntentFilter("com.spotify.music.metadatachanged"));
                     }

@@ -17,9 +17,10 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
+        <activity android:name=".Login"></activity>
         <activity
             android:name=".SettingsActivity"
-            android:label="@string/title_activity_settings"></activity>
+            android:label="@string/title_activity_settings" />
         <activity
             android:name=".PopActivity"
             android:theme="@style/AppTheme.Pop" />
@@ -29,22 +30,18 @@
             android:theme="@style/AppTheme.NoActionBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-        </activity>
-<!--        <receiver-->
-<!--            android:name="MyBroadcastReceiver"-->
-<!--            android:enabled="true"-->
-<!--            android:exported="true">-->
-
-<!--            <intent-filter>-->
-<!--                <action android:name="com.spotify.music.playbackstatechanged"/>-->
-<!--                <action android:name="com.spotify.music.metadatachanged"/>-->
-<!--                <action android:name="com.spotify.music.queuechanged"/>-->
-<!--            </intent-filter>-->
-
-<!--        </receiver>-->
+        </activity> <!-- <receiver -->
+        <!-- android:name="MyBroadcastReceiver" -->
+        <!-- android:enabled="true" -->
+        <!-- android:exported="true"> -->
+        <!-- <intent-filter> -->
+        <!-- <action android:name="com.spotify.music.playbackstatechanged"/> -->
+        <!-- <action android:name="com.spotify.music.metadatachanged"/> -->
+        <!-- <action android:name="com.spotify.music.queuechanged"/> -->
+        <!-- </intent-filter> -->
+        <!-- </receiver> -->
         <!--
              The API key for Google Maps-based APIs is defined as a string resource.
              (See the file "res/values/google_maps_api.xml").

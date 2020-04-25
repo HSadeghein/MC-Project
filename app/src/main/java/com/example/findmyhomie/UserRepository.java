@@ -17,7 +17,7 @@ public class UserRepository {
     private AppDatabase userDatabase = null;
 
     public UserRepository(Context context) {
-        userDatabase = Room.databaseBuilder(context, AppDatabase.class, DB_NAME).allowMainThreadQueries().fallbackToDestructiveMigration().build();
+                    userDatabase = Room.databaseBuilder(context, AppDatabase.class, DB_NAME).allowMainThreadQueries().fallbackToDestructiveMigration().build();
     }
 
     //    public static com.example.findmyhomie.UserRepository getInstance()
