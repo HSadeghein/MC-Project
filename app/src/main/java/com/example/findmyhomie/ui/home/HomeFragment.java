@@ -10,6 +10,7 @@ import android.database.sqlite.SQLiteConstraintException;
 import android.location.Location;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -40,8 +41,11 @@ import com.example.findmyhomie.R;
 import com.example.findmyhomie.SpotifySongData;
 import com.example.findmyhomie.User;
 import com.example.findmyhomie.UserRepository;
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
+import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
@@ -52,28 +56,40 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.tasks.Continuation;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
+import com.mongodb.client.model.Filters;
 import com.mongodb.stitch.android.core.Stitch;
 import com.mongodb.stitch.android.core.StitchAppClient;
 import com.mongodb.stitch.android.core.auth.StitchUser;
 import com.mongodb.stitch.android.services.mongodb.remote.RemoteMongoClient;
 import com.mongodb.stitch.android.services.mongodb.remote.RemoteMongoCollection;
 import com.mongodb.stitch.core.auth.providers.anonymous.AnonymousCredential;
+import com.mongodb.stitch.core.services.mongodb.remote.RemoteUpdateOptions;
+import com.mongodb.stitch.core.services.mongodb.remote.RemoteUpdateResult;
 
+import org.bson.Document;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 
+public class HomeFragment extends Fragment implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener, LocationListener, GoogleApiClient.ConnectionCallbacks,
+        GoogleApiClient.OnConnectionFailedListener {
 
-public class HomeFragment extends Fragment implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener {
+    RemoteMongoCollection<Document> _remoteCollection;
 
-    RemoteMongoCollection _remoteCollection;
+    Handler handler = new Handler();
+    Runnable runnable;
+    int delay = 30 * 1000; //Delay for 15 seconds.  One second = 1000 milliseconds.
 
     private GoogleMap mMap;
     private SupportMapFragment mapFragment;
@@ -87,12 +103,109 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
     private String ACCESSTOKEN = "";
 
 
-    public HomeFragment() {
+    @Override
+    public void onStart() {
+        super.onStart();
+        //User existed in database
+
+        UserRepository userRepository = new UserRepository(getContext());
+        int size = userRepository.getAllUsers().size();
+        Log.d("Database", "size" + size);
+        if (size == 0) {
+            Log.d("XDXDXD", "size is " + size);
+//            Intent i = new Intent(getActivity(), Login.class);
+//            Activity activity = (Activity) getContext();
+//            startActivityForResult(i, 0);
+            byte[] array = new byte[10]; // length is bounded by 7
+            new Random().nextBytes(array);
+            String generatedString = new String(array, Charset.forName("UTF-8"));
+            User user = new User();
+            user.setUsername(generatedString);
+            userRepository.insertUser(user);
+            Log.d("XDXDXD", "size is " + userRepository.getAllUsers().size());
+
+        }
+
+
+        //MongoDB Atlas and Stitch
+        if (!Stitch.hasAppClient("findmyhomie-etrmr")) {
+            final StitchAppClient client =
+                    Stitch.initializeDefaultAppClient("findmyhomie-etrmr");
+
+            final RemoteMongoClient mongoClient =
+                    client.getServiceClient(RemoteMongoClient.factory, "mongodb-atlas");
+
+            final RemoteMongoCollection<Document> _remoteCollection =
+                    mongoClient.getDatabase("Android").getCollection("users");
+
+
+        }
+
     }
+
+
+    @Override
+    public void onResume() {
+        //start handler as activity become visible
+
+        handler.postDelayed(runnable = new Runnable() {
+            public void run() {
+                updateHashMap();
+                PushMyDataToMongo();
+//                RenderMarkers();
+                handler.postDelayed(runnable, delay);
+            }
+        }, delay);
+
+        super.onResume();
+    }
+
+// If onPause() is not included the threads will double up when you
+// reload the activity
+
+    @Override
+    public void onPause() {
+        handler.removeCallbacks(runnable); //stop handler when activity not visible
+        super.onPause();
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        Log.d("ReturnActivity", "OK");
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode == 0) {
+            if (resultCode == Activity.RESULT_OK) {
+                UserRepository userRepository = new UserRepository(getContext());
+                User result = (User) data.getSerializableExtra("result");
+                result.setLat((float) mLastLocation.getLatitude());
+                result.setLng((float) mLastLocation.getLongitude());
+                userRepository.updateTask(result);
+                LatLng latLng = new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude());
+
+                MarkerOptions markerOptions = new MarkerOptions();
+                markerOptions.position(latLng);
+                markerOptions.title(result.username);
+                mCurrLocationMarker = mMap.addMarker(markerOptions);
+                MySingelton.getInstance().markerHashMap.put(result.username, mCurrLocationMarker);
+                //move map camera
+                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 11));
+            }
+            if (resultCode == Activity.RESULT_CANCELED) {
+                //Write your code if there's no result
+            }
+        }
+    }//onActivityResult
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
+
         View root = inflater.inflate(R.layout.fragment_home, container, false);
         mapFragment = (SupportMapFragment) getChildFragmentManager().findFragmentById(R.id.map);
         if (mapFragment == null) {
@@ -105,26 +218,19 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(getContext());
 
 
-        //MongoDB Atlas and Stitch
-        final StitchAppClient client = Stitch.initializeAppClient("findmyhomie-ryoth");
-
-        // Log-in using an Anonymous authentication provider from Stitch
-        client.getAuth().loginWithCredential(new AnonymousCredential())
-                .addOnCompleteListener(new OnCompleteListener<StitchUser>() {
-                    @Override
-                    public void onComplete(@NonNull Task<StitchUser> task) {
-                        // Get a remote client
-                        final RemoteMongoClient remoteMongoClient =
-                                client.getServiceClient(RemoteMongoClient.factory, "mongodb-atlas");
-
-                        // Set up the atlas collection
-                        _remoteCollection = remoteMongoClient
-                                .getDatabase("Android").getCollection("users");
-                    }
-                });
-
-
         return root;
+    }
+
+    @Override
+    public void onConnected(Bundle bundle) {
+
+
+
+    }
+
+    @Override
+    public void onConnectionSuspended(int i) {
+
     }
 
     /**
@@ -155,12 +261,17 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
             } else {
                 //Request Location Permission
                 checkLocationPermission();
+
             }
         } else {
             mFusedLocationClient.requestLocationUpdates(mLocationRequest, mLocationCallback, Looper.myLooper());
             mMap.setMyLocationEnabled(true);
         }
+
+        updateHashMap();
+        PushMyDataToMongo();
     }
+
 
     LocationCallback mLocationCallback = new LocationCallback() {
         @Override
@@ -177,18 +288,24 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
 
                 //Place current location marker
                 UserRepository userRepository = new UserRepository(getContext());
-                Log.d("Database", "the size is " + userRepository.getAllUsers().size());
-                User myUser = userRepository.getAllUsers().get(0);
-                String trackID = myUser.spotifySongID;
-                GetAccessToken(getContext(), trackID);
-                LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
-                MarkerOptions markerOptions = new MarkerOptions();
-                markerOptions.position(latLng);
-                markerOptions.title(    myUser.username);
-                mCurrLocationMarker = mMap.addMarker(markerOptions);
-                MySingelton.getInstance().markerHashMap.put(myUser.username, mCurrLocationMarker);
-                //move map camera
-                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 11));
+                if (userRepository.getAllUsers().size() != 0) {
+                    User myUser = userRepository.getAllUsers().get(0);
+
+                    String trackID = myUser.spotifySongID;
+                    if (trackID != "")
+                        GetAccessToken(getContext(), trackID, myUser.getUsername());
+                    LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
+                    myUser.setLat((float) latLng.latitude);
+                    myUser.setLng((float) latLng.longitude);
+                    userRepository.updateTask(myUser);
+                    MarkerOptions markerOptions = new MarkerOptions();
+                    markerOptions.position(latLng);
+                    markerOptions.title(myUser.username);
+                    mCurrLocationMarker = mMap.addMarker(markerOptions);
+                    MySingelton.getInstance().markerHashMap.put(myUser.username, mCurrLocationMarker);
+                    //move map camera
+                    mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 11));
+                }
 
 
             }
@@ -249,6 +366,8 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
 
                         mFusedLocationClient.requestLocationUpdates(mLocationRequest, mLocationCallback, Looper.myLooper());
                         mMap.setMyLocationEnabled(true);
+
+
                     }
 
                 } else {
@@ -297,7 +416,7 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
 
     }
 
-    private void GetAccessToken(Context _context, String _trackID) {
+    private void GetAccessToken(Context _context, String _trackID, String _username) {
 
 
         JSONObject jsonBodyObj = new JSONObject();
@@ -317,7 +436,7 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
                         try {
                             JSONObject responseJson = new JSONObject(response);
                             ACCESSTOKEN = responseJson.get("access_token").toString();
-                            GetTrackInfo(getContext(), _trackID);
+                            GetTrackInfo(getContext(), _trackID, _username);
                         } catch (JSONException e) {
                             e.printStackTrace();
                         }
@@ -366,7 +485,7 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
         queue.add(stringRequest);
     }
 
-    private void GetTrackInfo(Context _context, String _trackID) {
+    private void GetTrackInfo(Context _context, String _trackID, String _username) {
         try {
             SpotifySongData spotifySongData = new SpotifySongData();
             RequestQueue queue = Volley.newRequestQueue(_context);
@@ -389,11 +508,9 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
                                 spotifySongData.url = obj.getJSONObject("external_urls").getString("spotify");
                                 spotifySongData.imgURL = obj.getJSONObject("album").getJSONArray("images").getJSONObject(0).getString("url");
                                 spotifySongData.uri = obj.getString("uri");
-                                spotifySongData.username = mCurrLocationMarker.getTitle();
-                                mCurrLocationMarker.setTag(spotifySongData);
-
-                                Log.d("GetTrackInfo", spotifySongData.imgURL);
-                                Log.d("GetTrackInfo", spotifySongData.uri);
+                                spotifySongData.username = _username;
+                                Marker marker = MySingelton.getInstance().markerHashMap.get(_username);
+                                marker.setTag(spotifySongData);
 
                             } catch (JSONException e) {
                                 e.printStackTrace();
@@ -433,7 +550,170 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
 
     }
 
+    private void updateHashMap() {
+        final StitchAppClient client =
+                Stitch.getAppClient("findmyhomie-etrmr");
 
+        final RemoteMongoClient mongoClient =
+                client.getServiceClient(RemoteMongoClient.factory, "mongodb-atlas");
+
+        final RemoteMongoCollection<Document> _remoteCollection =
+                mongoClient.getDatabase("Android").getCollection("users");
+
+        client.getAuth().loginWithCredential(new AnonymousCredential()).continueWithTask(new Continuation<StitchUser, Task<List<Document>>>() {
+            @Override
+            public Task<List<Document>> then(@NonNull Task<StitchUser> task) throws Exception {
+                if (!task.isSuccessful()) {
+                    Log.e("STITCH", "Login Failed!");
+                    throw task.getException();
+                }
+                List<Document> docs = new ArrayList<>();
+
+                return _remoteCollection
+                        .find()
+                        .into(docs);
+            }
+        }).addOnCompleteListener(new OnCompleteListener<List<Document>>() {
+            @Override
+            public void onComplete(@NonNull Task<List<Document>> task) {
+                if (task.isSuccessful()) {
+                    UserRepository userRepository = new UserRepository(getContext());
+                    if (userRepository.getAllUsers().size() == 1) {
+                        String myUsername = userRepository.getAllUsers().get(0).username;
+                        for (Document doc : task.getResult()) {
+                            if (!doc.getString("username").trim().equals(myUsername.trim()) && doc.getString("username") != null) {
+                                String trackID = doc.getString("trackID");
+                                String username = doc.getString("username");
+                                Log.d("STITCH", "trackID : " + trackID);
+
+                                if (MySingelton.getInstance().markerHashMap.containsKey(username)) {
+                                    Marker marker = MySingelton.getInstance().markerHashMap.get(username);
+                                    marker.remove();
+                                    MarkerOptions markerOptions = new MarkerOptions();
+                                    LatLng latLng = new LatLng(doc.getDouble("lat"), doc.getDouble("lng"));
+                                    markerOptions.position(latLng);
+                                    markerOptions.title(doc.getString("username"));
+                                    marker = mMap.addMarker(markerOptions);
+                                    MySingelton.getInstance().markerHashMap.put(doc.getString("username"), marker);
+                                    GetAccessToken(getContext(), trackID, doc.getString("username"));
+
+
+                                } else {
+                                    MarkerOptions markerOptions = new MarkerOptions();
+                                    LatLng latLng = new LatLng(doc.getDouble("lat"), doc.getDouble("lng"));
+                                    markerOptions.position(latLng);
+                                    markerOptions.title(doc.getString("username"));
+                                    Marker marker = mMap.addMarker(markerOptions);
+                                    MySingelton.getInstance().markerHashMap.put(doc.getString("username"), marker);
+
+                                    GetAccessToken(getContext(), trackID, doc.getString("username"));
+
+                                }
+
+                                Log.d("STITCH", "Lat" + doc.getDouble("lat"));
+                            }
+                        }
+                    } else {
+                    }
+                    return;
+                }
+                Log.e("STITCH", "Error: " + task.getException().toString());
+                task.getException().printStackTrace();
+            }
+        });
+
+    }
+
+    void PushMyDataToMongo() {
+        final StitchAppClient client =
+                Stitch.getAppClient("findmyhomie-etrmr");
+
+        final RemoteMongoClient mongoClient =
+                client.getServiceClient(RemoteMongoClient.factory, "mongodb-atlas");
+
+        final RemoteMongoCollection<Document> _remoteCollection =
+                mongoClient.getDatabase("Android").getCollection("users");
+
+        client.getAuth().loginWithCredential(new AnonymousCredential()).continueWithTask(
+                new Continuation<StitchUser, Task<RemoteUpdateResult>>() {
+
+                    @Override
+                    public Task<RemoteUpdateResult> then(@NonNull Task<StitchUser> task) throws Exception {
+                        if (!task.isSuccessful()) {
+                            Log.e("STITCH", "Login failed!");
+                            throw task.getException();
+                        }
+                        UserRepository userRepository = new UserRepository(getContext());
+
+                        String myUsername = userRepository.getAllUsers().get(0).username;
+                        final Document updateDoc = new Document();
+                        if (MySingelton.getInstance().markerHashMap.containsKey(myUsername)) {
+                            SpotifySongData songData = (SpotifySongData) MySingelton.getInstance().markerHashMap.get(myUsername).getTag();
+                            LatLng latlng = MySingelton.getInstance().markerHashMap.get(myUsername).getPosition();
+
+                            updateDoc.put("username", myUsername);
+                            updateDoc.put("trackID", songData.trackID);
+                            updateDoc.put("lat", latlng.latitude);
+                            updateDoc.put("lng", latlng.longitude);
+                            return _remoteCollection.updateOne(
+                                    Filters.eq("username", myUsername.trim()), updateDoc, new RemoteUpdateOptions().upsert(true)
+                            );
+                        } else {
+                            return _remoteCollection.updateOne(
+                                    Filters.eq("username", "asdasdasd2323#$@#%#@"), updateDoc, new RemoteUpdateOptions().upsert(false)
+                            );
+                        }
+
+                    }
+                }
+        ).continueWithTask(new Continuation<RemoteUpdateResult, Task<List<Document>>>() {
+            @Override
+            public Task<List<Document>> then(@NonNull Task<RemoteUpdateResult> task) throws Exception {
+                if (!task.isSuccessful()) {
+                    Log.e("STITCH", "Update failed!");
+                    throw task.getException();
+                }
+                List<Document> docs = new ArrayList<>();
+                return _remoteCollection
+                        .find()
+                        .into(docs);
+            }
+        }).addOnCompleteListener(new OnCompleteListener<List<Document>>() {
+            @Override
+            public void onComplete(@NonNull Task<List<Document>> task) {
+                if (task.isSuccessful()) {
+                    Log.d("STITCH", "Found docs: " + task.getResult().toString());
+                    return;
+                }
+                Log.e("STITCH", "Error: " + task.getException().toString());
+                task.getException().printStackTrace();
+            }
+        });
+
+    }
+
+    void RenderMarkers() {
+        for (Map.Entry<String, Marker> element : MySingelton.getInstance().markerHashMap.entrySet()) {
+            mMap.clear();
+            LatLng latLng = element.getValue().getPosition();
+            MarkerOptions markerOptions = new MarkerOptions();
+            markerOptions.position(latLng);
+            markerOptions.title(element.getValue().getTitle());
+            mMap.addMarker(markerOptions);
+
+        }
+    }
+
+
+    @Override
+    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+
+    }
+
+    @Override
+    public void onLocationChanged(Location location) {
+
+    }
 }
 
 

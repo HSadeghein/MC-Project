@@ -38,23 +38,35 @@ public class PopActivity extends Activity {
         getWindow().setAttributes(params);
 
         SpotifySongData songData = (SpotifySongData) getIntent().getSerializableExtra("SpotifySongData");
-        ImageView imageView = (ImageView) findViewById(R.id.img_track);
-        Picasso.get().load(songData.imgURL).into(imageView);
-        TextView textView = (TextView) findViewById(R.id.txt_name);
-        textView.setText(songData.username);
-        textView = (TextView) findViewById(R.id.txt_track_name);
-        textView.setText(songData.name);
-        textView = (TextView) findViewById(R.id.txt_album_name);
-        textView.setText(songData.Album);
-        textView = (TextView) findViewById(R.id.txt_artist_name);
-        textView.setText(songData.Artist);
-        final Button button = findViewById(R.id.btn_spotify);
-        button.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                Uri uri = Uri.parse(songData.url);
-                Intent intent = new Intent(Intent.ACTION_VIEW, uri);
-                startActivity(intent);
-            }
-        });
+        if(songData != null) {
+            ImageView imageView = (ImageView) findViewById(R.id.img_track);
+            Picasso.get().load(songData.imgURL).into(imageView);
+            TextView textView = (TextView) findViewById(R.id.txt_name);
+            textView.setText(songData.username);
+            textView = (TextView) findViewById(R.id.txt_track_name);
+            textView.setText(songData.name);
+            textView = (TextView) findViewById(R.id.txt_album_name);
+            textView.setText(songData.Album);
+            textView = (TextView) findViewById(R.id.txt_artist_name);
+            textView.setText(songData.Artist);
+            final Button button = findViewById(R.id.btn_spotify);
+            button.setOnClickListener(new View.OnClickListener() {
+                public void onClick(View v) {
+                    Uri uri = Uri.parse(songData.url);
+                    Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+                    startActivity(intent);
+                }
+            });
+        }else{
+            TextView textView = (TextView) findViewById(R.id.txt_name);
+            textView.setText("Change song in your sporify app to see the result here");
+            textView = (TextView) findViewById(R.id.txt_track_name);
+            textView.setText("");
+            textView = (TextView) findViewById(R.id.txt_album_name);
+            textView.setText("");
+            textView = (TextView) findViewById(R.id.txt_artist_name);
+            textView.setText("");
+        }
+
     }
 }

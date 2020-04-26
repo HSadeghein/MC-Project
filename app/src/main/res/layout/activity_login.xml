@@ -4,6 +4,37 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/colorPrimary"
     tools:context=".Login">
+
+<LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center">
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="Username"
+        android:textColor="#FFFFFFFF"
+        android:textSize="20dp"
+        android:includeFontPadding="false"/>
+    <EditText
+        android:id="@+id/edittxt_username"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="10dp"
+        android:textColor="#FFFFFF"
+        android:textColorHint="#AAFFFFFF"
+        android:hint="Enter Your Username Here" />
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btn_login"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Register"
+        android:background="@color/colorAccent"
+        android:layout_margin="10dp"/>
+</LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

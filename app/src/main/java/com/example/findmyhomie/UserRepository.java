@@ -77,15 +77,15 @@ public class UserRepository {
 //        }
 //    }
 //
-//    public void deleteTask(final Note note) {
-//        new AsyncTask<Void, Void, Void>() {
-//            @Override
-//            protected Void doInBackground(Void... voids) {
-//                noteDatabase.daoAccess().deleteTask(note);
-//                return null;
-//            }
-//        }.execute();
-//    }
+    public void deleteTask(final User user) {
+        new AsyncTask<Void, Void, Void>() {
+            @Override
+            protected Void doInBackground(Void... voids) {
+                userDatabase.userDao().delete(user);
+                return null;
+            }
+        }.execute();
+    }
 
 //    public User getUser(final String _username) {
 //        new AsyncTask<String, Void, User>() {

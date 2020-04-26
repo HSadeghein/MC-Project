@@ -1,5 +1,6 @@
 package com.example.findmyhomie;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
@@ -31,6 +32,8 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
+
+
         //Spotify
         ConnectionParams connectionParams =
                 new ConnectionParams.Builder(CLIENT_ID)
@@ -47,6 +50,7 @@ public class MainActivity extends AppCompatActivity {
                         Log.d("MainActivity", "Connected! Yay!");
                         myBroadcastReceiver = new MyBroadcastReceiver();
                         getApplicationContext().registerReceiver(myBroadcastReceiver, new IntentFilter("com.spotify.music.metadatachanged"));
+
                     }
 
                     @Override
@@ -56,6 +60,11 @@ public class MainActivity extends AppCompatActivity {
                         // Something went wrong when attempting to connect! Handle errors here
                     }
                 });
+
+
+
+
+
     }
 
     @Override
@@ -92,10 +101,10 @@ public class MainActivity extends AppCompatActivity {
                 || super.onSupportNavigateUp();
     }
 
-    public void ClikedSetting(MenuItem item) {
+    public void ClickedSetting(MenuItem item) {
         Intent i = new Intent(this, SettingsActivity.class);
+        Activity activity = (Activity) this;
         startActivity(i);
-
 
     }
 

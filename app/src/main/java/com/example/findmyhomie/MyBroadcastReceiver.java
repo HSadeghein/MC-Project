@@ -35,6 +35,7 @@ public class MyBroadcastReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
+        Log.d("BroadCastRecieve", "Received");
         // This is sent with all broadcasts, regardless of type. The value is taken from
         // System.currentTimeMillis(), which you can compare to in order to determine how
         // old the event is.
@@ -52,18 +53,24 @@ public class MyBroadcastReceiver extends BroadcastReceiver {
 
             // Do something with extracted information...
 //            GetAccessToken(context, spotifySongID);
-            UpdateMyData(context, spotifySongID);
+            try {
+                UpdateMyData(context, spotifySongID);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
     }
 
-    private void UpdateMyData(Context _context, String _trackID) {
-        Log.d("BroadCastReceiver", "Song Changed");
+    private void UpdateMyData(Context _context, String _trackID) throws InterruptedException {
         UserRepository userRepository = new UserRepository(_context);
-        User myUser = userRepository.getUser("HSadeghein");
-        myUser.setSpotifySongID(_trackID);
-        userRepository.updateTask(myUser);
-        GetAccessToken(_context, _trackID);
+        Log.d("BroadCastReceiver", "Song Changed" + userRepository.getAllUsers().size());
 
+        if(userRepository.getAllUsers().size() != 0) {
+            User myUser = userRepository.getAllUsers().get(0);
+            myUser.setSpotifySongID(_trackID);
+            userRepository.updateTask(myUser);
+            GetAccessToken(_context, _trackID);
+        }
     }
     private void GetAccessToken(Context _context, String _trackID) {
 
