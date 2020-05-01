@@ -74,7 +74,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.UnsupportedEncodingException;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -89,7 +88,7 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
 
     Handler handler = new Handler();
     Runnable runnable;
-    int delay = 30 * 1000; //Delay for 15 seconds.  One second = 1000 milliseconds.
+    int delay = 10 * 1000; //Delay for 15 seconds.  One second = 1000 milliseconds.
 
     private GoogleMap mMap;
     private SupportMapFragment mapFragment;
@@ -106,25 +105,6 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
     @Override
     public void onStart() {
         super.onStart();
-        //User existed in database
-
-        UserRepository userRepository = new UserRepository(getContext());
-        int size = userRepository.getAllUsers().size();
-        Log.d("Database", "size" + size);
-        if (size == 0) {
-            Log.d("XDXDXD", "size is " + size);
-//            Intent i = new Intent(getActivity(), Login.class);
-//            Activity activity = (Activity) getContext();
-//            startActivityForResult(i, 0);
-            byte[] array = new byte[10]; // length is bounded by 7
-            new Random().nextBytes(array);
-            String generatedString = new String(array, Charset.forName("UTF-8"));
-            User user = new User();
-            user.setUsername(generatedString);
-            userRepository.insertUser(user);
-            Log.d("XDXDXD", "size is " + userRepository.getAllUsers().size());
-
-        }
 
 
         //MongoDB Atlas and Stitch
@@ -141,8 +121,42 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
 
         }
 
+        //User existed in database
+
+        UserRepository userRepository = new UserRepository(getContext());
+        User user = new User();
+        int size = userRepository.getAllUsers().size();
+        Log.d("Database", "size" + size);
+        if (size == 0) {
+
+//            List<Document> docs = new ArrayList<>();
+//            _remoteCollection
+//                    .find()
+//                    .into(docs);
+//            User user = new User();
+//            while()
+            user.setUsername(GetRandomString());
+            userRepository.insertUser(user);
+            Log.d("XDXDXD", "size is " + userRepository.getAllUsers().size());
+
+        }
+
     }
 
+    public String GetRandomString() {
+        int leftLimit = 97; // letter 'a'
+        int rightLimit = 122; // letter 'z'
+        int targetStringLength = 10;
+        Random random = new Random();
+        StringBuilder buffer = new StringBuilder(targetStringLength);
+        for (int i = 0; i < targetStringLength; i++) {
+            int randomLimitedInt = leftLimit + (int)
+                    (random.nextFloat() * (rightLimit - leftLimit + 1));
+            buffer.append((char) randomLimitedInt);
+        }
+        String generatedString = buffer.toString();
+        return generatedString;
+    }
 
     @Override
     public void onResume() {
@@ -223,7 +237,6 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
 
     @Override
     public void onConnected(Bundle bundle) {
-
 
 
     }
@@ -644,17 +657,20 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
                             throw task.getException();
                         }
                         UserRepository userRepository = new UserRepository(getContext());
-
+                        User user = userRepository.getAllUsers().get(0);
                         String myUsername = userRepository.getAllUsers().get(0).username;
+
                         final Document updateDoc = new Document();
                         if (MySingelton.getInstance().markerHashMap.containsKey(myUsername)) {
+
                             SpotifySongData songData = (SpotifySongData) MySingelton.getInstance().markerHashMap.get(myUsername).getTag();
                             LatLng latlng = MySingelton.getInstance().markerHashMap.get(myUsername).getPosition();
 
                             updateDoc.put("username", myUsername);
-                            updateDoc.put("trackID", songData.trackID);
-                            updateDoc.put("lat", latlng.latitude);
-                            updateDoc.put("lng", latlng.longitude);
+                            updateDoc.put("trackID", user.spotifySongID);
+                            updateDoc.put("lat", user.getLat());
+                            updateDoc.put("lng", user.getLng());
+
                             return _remoteCollection.updateOne(
                                     Filters.eq("username", myUsername.trim()), updateDoc, new RemoteUpdateOptions().upsert(true)
                             );
@@ -671,8 +687,10 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
             public Task<List<Document>> then(@NonNull Task<RemoteUpdateResult> task) throws Exception {
                 if (!task.isSuccessful()) {
                     Log.e("STITCH", "Update failed!");
+
                     throw task.getException();
                 }
+
                 List<Document> docs = new ArrayList<>();
                 return _remoteCollection
                         .find()
@@ -686,6 +704,7 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
                     return;
                 }
                 Log.e("STITCH", "Error: " + task.getException().toString());
+
                 task.getException().printStackTrace();
             }
         });

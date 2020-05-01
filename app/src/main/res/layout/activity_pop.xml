@@ -28,7 +28,7 @@
             android:layout_height="match_parent"
             android:layout_margin="10dp"
             android:gravity="center"
-            android:text="Hassan Sadeghein"
+            android:text="username"
             android:textAlignment="center"
             android:textColor="#FFFFFF" />
     </LinearLayout>
